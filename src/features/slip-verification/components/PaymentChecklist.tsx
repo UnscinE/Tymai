@@ -16,7 +16,7 @@ export function PaymentChecklist({
   bill,
   split,
   isOwner,
-  ownerToken,
+  slipEndpoint,
   restrictToPersonId,
   onBillUpdate,
   onSelectPerson,
@@ -25,7 +25,8 @@ export function PaymentChecklist({
   bill: Bill;
   split: SplitResult;
   isOwner: boolean;
-  ownerToken?: string | null;
+  /** endpoint ที่รับสลิป — /api/bills/<id>/slips หรือ /api/public/bills/<token>/slips */
+  slipEndpoint: string;
   /** ถ้ากำหนด = โหมดเพื่อน: อัปโหลดสลิปได้เฉพาะของตัวเอง */
   restrictToPersonId?: string | null;
   onBillUpdate: (bill: Bill) => void;
@@ -36,7 +37,7 @@ export function PaymentChecklist({
   const [manualBusyId, setManualBusyId] = useState<string | null>(null);
 
   const handleBillUpdate = useCallback((next: Bill) => onBillUpdate(next), [onBillUpdate]);
-  const { state, verify, reset } = useSlipVerification(bill.id, { onBillUpdate: handleBillUpdate });
+  const { state, verify, reset } = useSlipVerification(slipEndpoint, { onBillUpdate: handleBillUpdate });
 
   const handleUpload = (personId: string, file: File) => {
     setActivePersonId(personId);
@@ -44,12 +45,12 @@ export function PaymentChecklist({
   };
 
   const handleManualToggle = async (personId: string, nextStatus: 'paid' | 'unpaid') => {
-    if (!ownerToken) return;
     setManualBusyId(personId);
     try {
+      // สิทธิ์มาจาก session ฝั่ง server แล้ว ไม่ต้องแนบโทเคนอะไรมาเอง
       const res = await fetch(`/api/bills/${bill.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'x-owner-token': ownerToken },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personId, status: nextStatus }),
       });
       const json = await res.json();

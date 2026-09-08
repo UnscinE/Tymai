@@ -67,3 +67,58 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/**
+ * Reveal animation สำหรับหน้า Landing
+ *
+ * สำคัญ: สถานะ "ตั้งต้น" ของ element คือมองเห็นปกติ อนิเมชันเป็นแค่ตัวเสริม
+ * ต่างจากการใช้ JS ตั้ง opacity:0 แล้วรอ animate กลับมา ซึ่งถ้า JS ไม่ทำงาน
+ * (ยังไม่ hydrate / แท็บอยู่เบื้องหลังจน rAF ถูก throttle / JS พัง)
+ * ผู้ใช้จะเจอหน้าเปล่า — เจอมาแล้วตอนทดสอบจริง
+ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* เลื่อนขึ้นอย่างเดียว ไม่แตะ opacity — ใช้กับเนื้อหาครึ่งบนของหน้า */
+@keyframes slide-in {
+  from {
+    transform: translateY(14px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/**
+ * .reveal ใช้กับเนื้อหาที่เห็นทันทีตอนเปิดหน้า จึง "ห้าม" ไล่ opacity จาก 0
+ *
+ * animation-fill-mode: both ทำให้ element ถือสถานะ from ไว้ตลอดช่วง delay
+ * ถ้า CSS animation ไม่ได้เดิน (แท็บอยู่เบื้องหลัง, เบราว์เซอร์ throttle)
+ * ผู้ใช้จะเจอหัวข้อหลักโปร่งใสมองไม่เห็น — เจอมาแล้วตอนทดสอบจริง
+ * เลยเหลือแค่ขยับตำแหน่ง ถ้าอนิเมชันไม่เดินก็แค่ไม่ขยับ แต่ยังอ่านได้เสมอ
+ */
+.reveal {
+  animation: slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/**
+ * เผยตอนเลื่อนถึง โดยไม่ใช้ JS เลย (animation-timeline: view())
+ * ตัวนี้ fade ได้ปลอดภัยเพราะขับเคลื่อนด้วยตำแหน่ง scroll ไม่ใช่เวลา
+ * จึงไม่มีทางค้างกลางคัน และเบราว์เซอร์ที่ยังไม่รองรับจะข้ามบล็อกนี้
+ * แล้วแสดงเนื้อหาแบบนิ่งๆ ซึ่งถูกต้องอยู่แล้ว
+ */
+@supports (animation-timeline: view()) {
+  .reveal-on-scroll {
+    animation: rise-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 26%;
+  }
+}

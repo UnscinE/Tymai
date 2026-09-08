@@ -37,6 +37,23 @@ export function useBillSplit() {
     [setDraft],
   );
 
+  /**
+   * เพิ่มคนจากรายชื่อเพื่อน — ติด userId ไปด้วยเพื่อให้บิลไปโผล่ในหน้าของเขาเอง
+   * กันเพิ่มซ้ำ: คนหนึ่งบัญชีอยู่ในบิลเดียวกันได้ครั้งเดียว (ตรงกับ unique index ใน DB)
+   */
+  const addPersonFromUser = useCallback(
+    (user: { id: string; name: string }) => {
+      setDraft((d) => {
+        if (d.people.some((p) => p.userId === user.id)) return d;
+        return {
+          ...d,
+          people: [...d.people, { id: entityId('p'), name: user.name, userId: user.id }],
+        };
+      });
+    },
+    [setDraft],
+  );
+
   const renamePerson = useCallback(
     (id: string, name: string) => {
       setDraft((d) => ({
@@ -138,6 +155,7 @@ export function useBillSplit() {
     hydrated,
     actions: {
       addPerson,
+      addPersonFromUser,
       renamePerson,
       removePerson,
       addItem,

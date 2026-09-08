@@ -1,28 +1,33 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { Button } from '@/shared/components/ui/Button';
 import { scaleIn } from '@/shared/components/motion/variants';
 import { formatTHB } from '@/shared/lib/currency';
-import { usePromptPayPayload } from '../hooks/use-promptpay-payload';
+import { usePromptPayPayload, type QRSource } from '../hooks/use-promptpay-payload';
 import { composePaymentCard } from '../lib/compose-card';
 import { StyledQRCanvas, type QRCanvasHandle } from './StyledQRCanvas';
 
 export function PaymentQRCard({
+  source,
   amountSatang,
   payerName,
   billTitle,
   logoSrc,
   fallbackAccountName,
 }: {
+  /** บอก server ว่าจะสร้าง QR ของบัญชีไหน — client ไม่เคยส่งเลข PromptPay เอง */
+  source: QRSource;
+  /** ยอดสำหรับแสดงผลบนการ์ด (ยอดใน QR คำนวณฝั่ง server อีกที) */
   amountSatang: number;
   payerName: string;
   billTitle: string;
   logoSrc?: string;
   fallbackAccountName?: string;
 }) {
-  const state = usePromptPayPayload(amountSatang);
+  const state = usePromptPayPayload(source);
   const qrRef = useRef<QRCanvasHandle>(null);
   const [saving, setSaving] = useState(false);
 
@@ -69,7 +74,14 @@ export function PaymentQRCard({
           {state.status === 'ready' ? (
             <StyledQRCanvas payload={state.data.payload} logoSrc={logoSrc} handleRef={qrRef} size={224} />
           ) : state.status === 'error' ? (
-            <p className="px-4 text-center text-xs text-danger-ink">{state.message}</p>
+            <div className="px-4 text-center">
+              <p className="text-xs text-danger-ink">{state.message}</p>
+              {state.reason === 'no-payee' && (
+                <Link href="/settings" className="mt-1 inline-block text-xs text-brand hover:underline">
+                  ไปตั้งค่าเลข PromptPay
+                </Link>
+              )}
+            </div>
           ) : (
             <div className="h-[224px] w-[224px] animate-pulse rounded-xl bg-surface-alt" />
           )}

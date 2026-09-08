@@ -46,9 +46,19 @@ export function PeopleManager({
               layout
               variants={fadeUp}
               exit="exit"
-              className="group flex items-center gap-1.5 rounded-full border border-line bg-surface-alt py-1 pr-1 pl-3"
+              className={
+                person.userId
+                  ? 'group flex items-center gap-1.5 rounded-full border border-brand/25 bg-brand-soft py-1 pr-1 pl-3'
+                  : 'group flex items-center gap-1.5 rounded-full border border-line bg-surface-alt py-1 pr-1 pl-3'
+              }
             >
               <span className="text-sm font-medium text-ink">{person.name}</span>
+              {/* มีบัญชีในระบบ = บิลจะไปโผล่ในหน้าของเขาเอง ไม่ต้องรอลิงก์ */}
+              {person.userId && (
+                <span title="ผูกกับบัญชีผู้ใช้แล้ว" aria-label="ผูกกับบัญชีผู้ใช้แล้ว" className="text-xs text-brand">
+                  ●
+                </span>
+              )}
               <button
                 type="button"
                 aria-label={`ลบ ${person.name}`}

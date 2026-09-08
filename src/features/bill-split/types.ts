@@ -3,6 +3,12 @@
 export type Person = {
   id: string;
   name: string;
+  /**
+   * บัญชีผู้ใช้ที่ผูกกับคนนี้ (ถ้าเลือกมาจากรายชื่อเพื่อน)
+   * ถ้าเป็น null คือเพื่อนที่ไม่มีบัญชี ต้องจ่ายผ่านลิงก์สาธารณะ
+   * ฝั่ง server จะกรองอีกชั้นว่าเป็นเพื่อนกันจริงไหม ห้ามเชื่อค่านี้ตรงๆ
+   */
+  userId?: string | null;
 };
 
 export type BillItem = {
@@ -37,6 +43,13 @@ export type PaymentRecord = {
   manual?: boolean;
 };
 
+/**
+ * รูปร่างของบิลที่ฝั่ง UI ใช้ — เป็น DTO ที่ map มาจากตารางใน Prisma อีกที
+ * (person.id ที่นี่ = BillParticipant.id ในฐานข้อมูล)
+ *
+ * จงใจไม่ให้ UI รู้จัก schema ของ DB ตรงๆ เพื่อให้เปลี่ยนโครงตารางได้
+ * โดยแตะแค่ bill-service.ts จุดเดียว
+ */
 export type Bill = {
   id: string;
   title: string;
@@ -47,6 +60,12 @@ export type Bill = {
   accountName: string;
   createdAt: string;
   updatedAt: string;
+  /** สถานะบิล — 'OPEN' คือกำลังเก็บเงิน, 'SETTLED' คือครบแล้ว */
+  status: 'DRAFT' | 'OPEN' | 'SETTLED' | 'CANCELLED';
+  /** โทเคนลิงก์สาธารณะ — ส่งให้เฉพาะเจ้าของบิลเท่านั้น ไม่ส่งไปกับหน้าที่เพื่อนเปิด */
+  publicToken?: string;
+  /** ผู้ใช้ที่กำลังดูเป็นเจ้าของบิลนี้ไหม (คำนวณฝั่ง server) */
+  isCreator?: boolean;
 };
 
 /** ผลลัพธ์การคำนวณของคนหนึ่งคน */

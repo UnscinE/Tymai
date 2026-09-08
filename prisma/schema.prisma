@@ -1,0 +1,354 @@
+// ============================================================================
+//  tymai — Bill Splitting / PromptPay QR
+//  Prisma schema (PostgreSQL)
+//
+//  หลักการที่ใช้ออกแบบ schema นี้:
+//
+//  1. เงินเก็บเป็น "สตางค์" (Int) เสมอ ไม่ใช้ Float/Decimal กับยอดที่ต้องหาร
+//     สอดคล้องกับ src/shared/lib/currency.ts ที่ระบบเดิมใช้อยู่
+//
+//  2. Role ระดับ "ผู้ใช้" มีแค่ USER กับ ADMIN
+//     ส่วน Creator / Payer ไม่ใช่ role ของคน แต่เป็น "ความสัมพันธ์ต่อบิลใบหนึ่ง"
+//     คนเดียวกันเป็นคนสร้างบิล A และเป็นคนจ่ายบิล B ได้ในวันเดียวกัน
+//     ถ้าทำ Creator/Payer เป็น column บน User ผู้ใช้จะติดอยู่ในบทบาทเดียวตลอด
+//     → Creator ดูจาก Bill.creatorId, Payer ดูจาก BillParticipant.userId
+//
+//  3. บิลที่ publish แล้วต้อง "แช่แข็ง" ยอด (BillParticipant.amountDueSatang)
+//     ประวัติย้อนหลังจะได้ไม่เปลี่ยนตามการแก้ไขรายการอาหารทีหลัง
+//
+//  4. ผู้ร่วมบิลไม่จำเป็นต้องมีบัญชี — BillParticipant.userId เป็น nullable
+//     เพื่อรองรับ flow เดิมที่แชร์ลิงก์ให้เพื่อนจ่ายโดยไม่ต้อง login
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 ไม่รับ `url` ในไฟล์ schema แล้ว
+// - connection string สำหรับ migrate/introspect อยู่ใน prisma.config.ts (ใช้ DIRECT_URL)
+// - connection ตอน runtime มาจาก driver adapter ใน src/server/db.ts (ใช้ DATABASE_URL ผ่าน pooler)
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED // แอดมินระงับการใช้งาน
+  DELETED   // soft delete — ยังต้องอ้างอิงได้จากบิลเก่า
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum BillStatus {
+  DRAFT     // ยังแก้ไขได้ ยังไม่มีใครเห็น
+  OPEN      // publish แล้ว ยอดถูกแช่แข็ง กำลังเก็บเงิน
+  SETTLED   // ทุกคนจ่ายครบ
+  CANCELLED // ยกเลิก
+}
+
+enum ParticipantStatus {
+  UNPAID
+  PENDING_REVIEW // ส่งสลิปแล้ว รอเจ้าของบิลตรวจ (ใช้เมื่อเปิดโหมด manual review)
+  PAID
+  WAIVED         // เจ้าของบิลยกให้ ไม่ต้องจ่าย
+}
+
+enum PaymentMethod {
+  PROMPTPAY_QR
+  CASH
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationLevel {
+  ANTI_DUPLICATE // ระดับ A: ตรวจว่าเป็นสลิปจริง + สลิปใบนี้ยังไม่เคยถูกใช้
+  PROVIDER_API   // ระดับ B: ยืนยันยอดกับ API ธนาคาร/ผู้ให้บริการแล้ว
+  MANUAL         // เจ้าของบิลหรือแอดมินยืนยันด้วยมือ
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Auth — โครงตาม Auth.js (NextAuth) Prisma adapter
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String?    @unique
+  emailVerified DateTime?
+  image         String?
+
+  // ใช้ค้นหาเพื่อน — ทั้งสามช่องต้อง unique เพื่อไม่ให้เพิ่มเพื่อนผิดคน
+  username String? @unique
+  phone    String? @unique
+
+  // มีเฉพาะคนที่สมัครด้วย email/password — ผู้ใช้ Google login จะเป็น null
+  passwordHash String?
+
+  role   UserRole   @default(USER)
+  status UserStatus @default(ACTIVE)
+
+  // ข้อมูลรับเงินของผู้ใช้เอง (เข้ารหัสก่อนเก็บ — ดู docs/rbac-design.md)
+  promptPayIdEnc String?
+  promptPayName  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  accounts Account[]
+  sessions Session[]
+
+  createdBills       Bill[]            @relation("BillCreator")
+  participations     BillParticipant[]
+  sentFriendships    Friendship[]      @relation("FriendshipRequester")
+  gotFriendships     Friendship[]      @relation("FriendshipAddressee")
+  auditLogs          AuditLog[]        @relation("AuditActor")
+  verifiedPayments   Payment[]         @relation("PaymentVerifier")
+
+  @@index([role, status])
+  @@index([createdAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Friends
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// เก็บแถวเดียวต่อคู่ความสัมพันธ์ (ไม่เก็บสองทาง) — เวลา query ต้องเช็คทั้ง
+/// requesterId และ addresseeId เสมอ ดูตัวอย่างใน docs/rbac-design.md
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Bills
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Bill {
+  id String @id @default(cuid())
+
+  /// โทเคนสำหรับลิงก์สาธารณะ /b/<token> — เพื่อนเปิดจ่ายได้โดยไม่ต้อง login
+  /// เดาไม่ได้ (32+ chars) และเพิกถอนได้โดยการ regenerate
+  publicToken String @unique
+
+  title     String
+  status    BillStatus @default(DRAFT)
+  creatorId String
+
+  // ค่าใช้จ่ายระดับบิล — ตรงกับ BillCharges ในโค้ดปัจจุบัน
+  servicePercent Decimal @default(0) @db.Decimal(5, 2)
+  vatPercent     Decimal @default(0) @db.Decimal(5, 2)
+  discountSatang Int     @default(0)
+
+  /// snapshot ตอน publish — ยอดรวมทั้งบิล (สตางค์)
+  totalSatang Int @default(0)
+
+  /// snapshot ข้อมูลผู้รับเงิน ณ เวลาที่ publish
+  /// ถ้าผู้ใช้เปลี่ยนเลข PromptPay ทีหลัง บิลเก่าต้องยังแสดงของเดิม
+  payeeName      String?
+  payeeIdEnc     String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+  settledAt   DateTime?
+  /// บิลหมดอายุอัตโนมัติ (เดิม KV ตั้งไว้ 30 วัน)
+  expiresAt   DateTime?
+
+  creator      User              @relation("BillCreator", fields: [creatorId], references: [id])
+  items        BillItem[]
+  participants BillParticipant[]
+  payments     Payment[]
+
+  @@index([creatorId, status, createdAt])
+  @@index([status, expiresAt])
+}
+
+model BillItem {
+  id          String @id @default(cuid())
+  billId      String
+  name        String
+  priceSatang Int
+  sortOrder   Int    @default(0)
+
+  bill   Bill            @relation(fields: [billId], references: [id], onDelete: Cascade)
+  shares BillItemShare[]
+
+  @@index([billId])
+}
+
+/// ตารางเชื่อม "เมนูนี้ ใครกินบ้าง" — หัวใจของการหารเงินแบบรายรายการ
+/// (เมนู 1 = a,b / เมนู 2 = a / เมนู 3 = b / เมนู 4 = a,b)
+model BillItemShare {
+  itemId        String
+  participantId String
+
+  item        BillItem        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  participant BillParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, participantId])
+  @@index([participantId])
+}
+
+/// คนหนึ่งคนในบิลหนึ่งใบ
+/// userId เป็น null ได้ = เพื่อนที่ยังไม่มีบัญชี (จ่ายผ่านลิงก์สาธารณะ)
+model BillParticipant {
+  id     String  @id @default(cuid())
+  billId String
+  userId String?
+
+  /// ชื่อที่แสดงในบิลใบนี้ (ตั้งได้ต่างจากชื่อบัญชี และคงอยู่แม้ผู้ใช้เปลี่ยนชื่อ)
+  displayName String
+
+  /// ยอดที่ต้องจ่าย — คำนวณครั้งเดียวตอน publish แล้วแช่แข็งไว้
+  amountDueSatang Int               @default(0)
+  status          ParticipantStatus @default(UNPAID)
+
+  /// โทเคนเฉพาะคน ใช้ต่อท้ายลิงก์สาธารณะให้เปิดมาแล้วเจอยอดตัวเองเลย
+  claimToken String @unique
+
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  bill       Bill            @relation(fields: [billId], references: [id], onDelete: Cascade)
+  user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  itemShares BillItemShare[]
+  payments   Payment[]
+
+  /// คนหนึ่งคนอยู่ในบิลใบเดียวกันได้ครั้งเดียว (เฉพาะคนที่มีบัญชี)
+  @@unique([billId, userId])
+  @@index([userId, status])
+  @@index([billId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Payments / Slip verification
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Payment {
+  id            String @id @default(cuid())
+  billId        String
+  participantId String
+
+  amountSatang Int
+  method       PaymentMethod @default(PROMPTPAY_QR)
+  status       PaymentStatus @default(PENDING)
+
+  /// sha-256 ของ payload บน QR สลิป
+  /// unique ทั้งตาราง = สลิปหนึ่งใบใช้ยืนยันได้ครั้งเดียวในระบบ (กันส่งต่อกันในกลุ่ม)
+  /// ตรงนี้แทน slip:<fingerprint> ที่เดิมเก็บใน KV
+  slipFingerprint String? @unique
+  slipRef         String?
+  sendingBank     String?
+
+  verificationLevel VerificationLevel @default(ANTI_DUPLICATE)
+  /// response ดิบจาก Slip Verification API ไว้ให้แอดมินตรวจตอนมีข้อพิพาท
+  providerResponse  Json?
+  rejectedReason    String?
+
+  /// null = ระบบยืนยันเอง, มีค่า = คนกดยืนยัน (เจ้าของบิลหรือแอดมิน)
+  verifiedById String?
+  verifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  bill        Bill            @relation(fields: [billId], references: [id], onDelete: Cascade)
+  participant BillParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  verifiedBy  User?           @relation("PaymentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  @@index([billId, status])
+  @@index([participantId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Admin
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// บันทึกทุกการกระทำที่เปลี่ยนสถานะเงิน ไว้ให้แอดมินสืบตอนมีข้อพิพาท
+/// เขียนอย่างเดียว ห้ามแก้ ห้ามลบ
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String // เช่น "bill.publish", "payment.verify", "user.suspend"
+  entityType String // "Bill" | "Payment" | "User" | ...
+  entityId   String
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+}

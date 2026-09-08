@@ -23,7 +23,11 @@ const IDLE: State = { stage: 'idle', message: null, reason: null };
  * การอ่าน QR ทำฝั่ง client เพื่อไม่ต้องอัปโหลดรูปสลิป (ซึ่งมีข้อมูลส่วนตัว) ขึ้น server เลย
  * server เห็นแค่ payload ของ QR เท่านั้น
  */
-export function useSlipVerification(billId: string, options?: { onBillUpdate?: (bill: Bill) => void }) {
+export function useSlipVerification(
+  /** endpoint ที่รับสลิป — ต่างกันระหว่างในแอปกับลิงก์สาธารณะ */
+  slipEndpoint: string,
+  options?: { onBillUpdate?: (bill: Bill) => void },
+) {
   const [state, setState] = useState<State>(IDLE);
 
   const reset = useCallback(() => setState(IDLE), []);
@@ -53,7 +57,7 @@ export function useSlipVerification(billId: string, options?: { onBillUpdate?: (
       setState({ stage: 'verifying', message: 'กำลังตรวจสอบสลิป…', reason: null });
 
       try {
-        const res = await fetch(`/api/bills/${billId}/slips`, {
+        const res = await fetch(slipEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ personId, payload }),
@@ -79,7 +83,7 @@ export function useSlipVerification(billId: string, options?: { onBillUpdate?: (
         setState({ stage: 'failed', reason: 'network', message: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่' });
       }
     },
-    [billId, options],
+    [slipEndpoint, options],
   );
 
   return { state, verify, reset } as const;
