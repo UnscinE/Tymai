@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/**
+ * Design tokens — โทน Fintech: navy เป็นสีหลัก, เขียวคือ "จ่ายแล้ว",
+ * พื้นหลังเทาอ่อนให้การ์ดสีขาวลอยขึ้นมา
+ *
+ * ตั้งใจล็อกเป็นธีมสว่างอย่างเดียว: หน้าจอที่เกี่ยวกับเงินต้องอ่านง่ายและ
+ * ดูเหมือนกันทุกเครื่องเวลาแคปหน้าจอส่งกันในกลุ่ม
+ */
+@theme {
+  /* แบรนด์ */
+  --color-brand: #1e40af;
+  --color-brand-dark: #1a357f;
+  --color-brand-soft: #eef2ff;
+
+  /* ตัวอักษร */
+  --color-ink: #0f172a;
+  --color-ink-muted: #475569;
+  --color-ink-faint: #94a3b8;
+
+  /* พื้นผิว */
+  --color-canvas: #f6f8fb;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5f9;
+  --color-line: #e2e8f0;
+
+  /* สถานะ */
+  --color-success: #059669;
+  --color-success-soft: #ecfdf5;
+  --color-success-ink: #047857;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-warning-ink: #b45309;
+  --color-danger: #e11d48;
+  --color-danger-soft: #fff1f2;
+  --color-danger-ink: #be123c;
+
+  /* เงา */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
+  --shadow-lifted: 0 4px 12px rgb(15 23 42 / 0.06), 0 12px 32px rgb(15 23 42 / 0.08);
+
+  /* ฟอนต์ */
+  --font-sans: var(--font-noto-thai), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ตัวเลขเงินต้องกว้างเท่ากันทุกหลัก ไม่งั้นยอดจะกระตุกเวลาอัปเดต */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "tymai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.38.4",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
+    "framer-motion": "^13.2.0",
+    "jsqr": "^1.4.0",
+    "next": "16.3.4",
+    "promptpay-qr": "^0.5.0",
+    "qr-code-styling": "^1.9.2",
+    "qrcode.react": "^4.2.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "allowScripts": {
+    "unrs-resolver@1.12.2": true
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "clsx": "^2.1.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
