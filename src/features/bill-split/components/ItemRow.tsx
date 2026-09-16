@@ -1,15 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2, Users } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { formatAmount, splitEvenly } from '@/shared/lib/currency';
-import { fadeUp } from '@/shared/components/motion/variants';
 import type { BillItem, Person } from '../types';
 
-/**
- * แถวรายการอาหาร 1 รายการ พร้อมชิปให้ติ๊กว่าใครกินบ้าง
- * ตัวอย่างที่รองรับ: เมนู 1 = a,b / เมนู 2 = a / เมนู 3 = b / เมนู 4 = a,b
- */
 export function ItemRow({
   item,
   people,
@@ -23,6 +20,8 @@ export function ItemRow({
   onSelectAll: (itemId: string, personIds: string[]) => void;
   onRemove: (itemId: string) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const eaterCount = item.sharedBy.length;
   const perHead = eaterCount > 0 ? splitEvenly(item.price, eaterCount)[0] : 0;
   const allSelected = eaterCount === people.length && people.length > 0;
@@ -30,63 +29,90 @@ export function ItemRow({
   return (
     <motion.li
       layout
-      variants={fadeUp}
-      exit="exit"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
       className={cn(
-        'rounded-xl border p-3 transition-colors',
-        eaterCount === 0 ? 'border-warning/40 bg-warning-soft' : 'border-line bg-white',
+        'group relative flex flex-col rounded-xl border p-4 transition-all duration-200 hover:shadow-sm',
+        eaterCount === 0 ? 'border-warning/40 bg-warning-soft' : 'border-line bg-white hover:border-brand/40',
       )}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{item.name}</p>
-        <p className="text-sm font-semibold tabular-nums text-ink">{formatAmount(item.price)}</p>
-        <button
-          type="button"
-          aria-label={`ลบ ${item.name}`}
-          onClick={() => onRemove(item.id)}
-          className="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-ink-faint transition hover:bg-danger/10 hover:text-danger-ink"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {people.map((person) => {
-          const active = item.sharedBy.includes(person.id);
-          return (
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col">
+          <p className="font-semibold text-ink">{item.name}</p>
+          <div className="mt-1 flex items-center gap-2">
             <button
-              key={person.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onToggleEater(item.id, person.id)}
-              className={cn(
-                'rounded-full border px-2.5 py-1 text-xs font-medium transition active:scale-95',
-                active
-                  ? 'border-brand/30 bg-brand-soft text-brand-dark'
-                  : 'border-line bg-white text-ink-faint hover:border-ink-faint hover:text-ink-muted',
-              )}
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-1 rounded-full bg-surface-alt px-2 py-1 text-xs text-ink-muted hover:bg-surface-hover"
             >
-              {person.name}
+              <Users className="h-3 w-3" />
+              {eaterCount === 0 ? (
+                <span>ไม่มีคนกิน</span>
+              ) : (
+                <span>{eaterCount} คน</span>
+              )}
             </button>
-          );
-        })}
-
-        {people.length > 0 && (
+            <p className="text-xs text-ink-faint">
+              {eaterCount > 0 && `(คนละ ~${formatAmount(perHead)})`}
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <p className="text-lg font-bold tabular-nums text-ink">{formatAmount(item.price)}</p>
           <button
             type="button"
-            onClick={() => onSelectAll(item.id, allSelected ? [] : people.map((p) => p.id))}
-            className="ml-1 text-xs text-ink-faint underline-offset-2 hover:text-brand hover:underline"
+            aria-label={`ลบ ${item.name}`}
+            onClick={() => onRemove(item.id)}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-faint opacity-0 transition-all group-hover:opacity-100 hover:bg-danger/10 hover:text-danger-ink"
           >
-            {allSelected ? 'ล้าง' : 'ทุกคน'}
+            <Trash2 className="h-4 w-4" />
           </button>
-        )}
+        </div>
       </div>
 
-      <p className="mt-2 text-xs text-ink-faint">
-        {eaterCount === 0
-          ? '⚠ ยังไม่ได้เลือกคนกิน — ยอดนี้ยังไม่ถูกนำไปหาร'
-          : `หาร ${eaterCount} คน · คนละ ~${formatAmount(perHead)}`}
-      </p>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
+              {people.map((person) => {
+                const active = item.sharedBy.includes(person.id);
+                return (
+                  <button
+                    key={person.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onToggleEater(item.id, person.id)}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-95',
+                      active
+                        ? 'border-brand/30 bg-brand-soft text-brand-dark'
+                        : 'border-line bg-white text-ink-faint hover:border-ink-faint hover:text-ink-muted',
+                    )}
+                  >
+                    {person.name}
+                  </button>
+                );
+              })}
+
+              {people.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onSelectAll(item.id, allSelected ? [] : people.map((p) => p.id))}
+                  className="ml-2 text-xs text-brand underline-offset-2 hover:underline"
+                >
+                  {allSelected ? 'ล้างทุกคน' : 'เลือกทุกคน'}
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.li>
   );
 }
