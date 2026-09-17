@@ -15,7 +15,8 @@ export default async function AdminOverviewPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
-      <h1 className="mb-6 text-2xl font-bold tracking-tight text-ink">ภาพรวมระบบ</h1>
+      <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand">ระบบจัดการ</p>
+      <h1 className="mb-6 text-2xl font-bold tracking-tight text-ink md:text-3xl">ภาพรวมระบบ</h1>
 
       <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="ผู้ใช้ทั้งหมด" value={overview.users.total} sub={`+${overview.users.newThisWeek} ใน 7 วัน`} />
@@ -79,7 +80,7 @@ function Stat({
   tone?: 'danger';
 }) {
   return (
-    <div className="rounded-xl border border-line bg-surface p-4">
+    <div className="rounded-2xl border border-line/80 bg-surface p-4 shadow-card transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-brand/25 hover:shadow-md">
       <p className="text-xs text-ink-faint">{label}</p>
       <p
         className={

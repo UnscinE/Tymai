@@ -7,10 +7,10 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'success' | 'danger';
 type Size = 'sm' | 'md';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-brand text-white hover:bg-brand-dark active:bg-brand-dark shadow-sm',
-  secondary: 'bg-surface-alt text-ink border border-line hover:border-brand/40 hover:bg-white',
+  primary: 'bg-brand text-white shadow-sm hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-md active:bg-brand-dark',
+  secondary: 'border border-line bg-surface-alt text-ink hover:-translate-y-0.5 hover:border-brand/40 hover:bg-white hover:shadow-sm',
   ghost: 'text-ink-muted hover:bg-surface-alt hover:text-ink',
-  success: 'bg-success text-white hover:brightness-95 shadow-sm',
+  success: 'bg-success text-white shadow-sm hover:-translate-y-0.5 hover:brightness-95 hover:shadow-md',
   danger: 'text-danger hover:bg-danger/10',
 };
 

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { requireAdmin } from '@/server/guards';
 import { Badge } from '@/shared/components/ui/Badge';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
+import { ShellNav } from '@/shared/components/navigation/ShellNav';
 
 /**
  * Shell ของโซนแอดมิน
@@ -16,24 +17,27 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-line bg-ink text-white">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 md:px-6">
-          <Link href="/admin" className="font-bold tracking-tight">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-ink text-white shadow-lg shadow-ink/10">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-3 px-3 py-2 md:gap-5 md:px-6">
+          <Link href="/admin" className="shrink-0 rounded-lg font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
             tymai <span className="text-white/50">admin</span>
           </Link>
 
-          <nav className="flex items-center gap-1 text-sm">
-            <AdminLink href="/admin">ภาพรวม</AdminLink>
-            <AdminLink href="/admin/users">ผู้ใช้</AdminLink>
-            <AdminLink href="/admin/bills">บิล</AdminLink>
-            <AdminLink href="/admin/audit">Audit log</AdminLink>
-          </nav>
+          <ShellNav
+            dark
+            items={[
+              { href: '/admin', label: 'ภาพรวม', icon: 'chart' },
+              { href: '/admin/users', label: 'ผู้ใช้', icon: 'users' },
+              { href: '/admin/bills', label: 'บิล', icon: 'fileText' },
+              { href: '/admin/audit', label: 'Audit log', icon: 'clipboard' },
+            ]}
+          />
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <Badge tone="brand">ADMIN</Badge>
             <Link
               href="/dashboard"
-              className="rounded-lg px-2.5 py-1.5 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
+              className="hidden rounded-lg px-2.5 py-1.5 text-sm text-white/70 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:inline-flex"
             >
               กลับหน้าผู้ใช้
             </Link>
@@ -42,23 +46,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </div>
       </header>
 
-      <p className="bg-warning-soft px-4 py-2 text-center text-xs text-warning-ink">
+      <p className="border-b border-warning/20 bg-warning-soft px-4 py-2.5 text-center text-xs leading-5 text-warning-ink">
         คุณกำลังดูข้อมูลของผู้ใช้ทุกคนในระบบ — ทุกการกระทำในหน้านี้ถูกบันทึกลง audit log
         พร้อมชื่อของคุณ ({user.email})
       </p>
 
       {children}
     </div>
-  );
-}
-
-function AdminLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-lg px-2.5 py-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-    >
-      {children}
-    </Link>
   );
 }

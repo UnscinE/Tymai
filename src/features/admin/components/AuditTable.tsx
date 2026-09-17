@@ -18,40 +18,61 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-sm">
-        <thead>
-          <tr className="border-b border-line text-left text-xs text-ink-faint">
-            <th className="pb-2 font-medium">เวลา</th>
-            <th className="pb-2 font-medium">การกระทำ</th>
-            <th className="pb-2 font-medium">ผู้ทำ</th>
-            <th className="pb-2 font-medium">เป้าหมาย</th>
-            <th className="pb-2 font-medium">รายละเอียด</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-line">
-          {rows.map((row) => (
-            <tr key={row.id} className="align-top">
-              <td className="py-2 pr-3 whitespace-nowrap text-xs text-ink-faint">
-                {formatDateTime(row.createdAt)}
-              </td>
-              <td className="py-2 pr-3">
+    <>
+      <div className="space-y-2 md:hidden">
+        {rows.map((row) => (
+          <article key={row.id} className="rounded-2xl border border-line bg-white p-3 shadow-card">
+            <div className="flex items-start justify-between gap-3">
+              <div>
                 <Badge tone={toneFor(row.action)}>{ACTION_LABELS[row.action] ?? row.action}</Badge>
-              </td>
-              <td className="max-w-[12rem] truncate py-2 pr-3 text-ink-muted">
-                {row.actorName ?? row.actorEmail ?? 'ระบบ'}
-              </td>
-              <td className="py-2 pr-3 font-mono text-xs text-ink-faint">
-                {row.entityType}/{row.entityId.slice(0, 8)}…
-              </td>
-              <td className="py-2 font-mono text-xs break-all text-ink-faint">
-                {row.metadata ? JSON.stringify(row.metadata) : '—'}
-              </td>
+                <p className="mt-2 text-sm text-ink-muted">{row.actorName ?? row.actorEmail ?? 'ระบบ'}</p>
+              </div>
+              <time className="shrink-0 text-xs text-ink-faint">{formatDateTime(row.createdAt)}</time>
+            </div>
+            <p className="mt-2 font-mono text-xs text-ink-faint">{row.entityType}/{row.entityId.slice(0, 8)}…</p>
+            {row.metadata ? (
+              <p className="mt-2 break-all border-t border-line pt-2 font-mono text-xs text-ink-faint">
+                {JSON.stringify(row.metadata)}
+              </p>
+            ) : null}
+          </article>
+        ))}
+      </div>
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-160 text-sm">
+          <thead>
+            <tr className="border-b border-line text-left text-xs text-ink-faint">
+              <th className="pb-2 font-medium">เวลา</th>
+              <th className="pb-2 font-medium">การกระทำ</th>
+              <th className="pb-2 font-medium">ผู้ทำ</th>
+              <th className="pb-2 font-medium">เป้าหมาย</th>
+              <th className="pb-2 font-medium">รายละเอียด</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map((row) => (
+              <tr key={row.id} className="align-top">
+                <td className="py-2 pr-3 whitespace-nowrap text-xs text-ink-faint">
+                  {formatDateTime(row.createdAt)}
+                </td>
+                <td className="py-2 pr-3">
+                  <Badge tone={toneFor(row.action)}>{ACTION_LABELS[row.action] ?? row.action}</Badge>
+                </td>
+                <td className="max-w-48 truncate py-2 pr-3 text-ink-muted">
+                  {row.actorName ?? row.actorEmail ?? 'ระบบ'}
+                </td>
+                <td className="py-2 pr-3 font-mono text-xs text-ink-faint">
+                  {row.entityType}/{row.entityId.slice(0, 8)}…
+                </td>
+                <td className="py-2 font-mono text-xs break-all text-ink-faint">
+                  {row.metadata ? JSON.stringify(row.metadata) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 

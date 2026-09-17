@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { requireUser } from '@/server/guards';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { Badge } from '@/shared/components/ui/Badge';
+import { ShellNav } from '@/shared/components/navigation/ShellNav';
 
 /**
  * Shell ของโซนที่ต้อง login
@@ -15,24 +16,26 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-line bg-surface/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 md:px-6">
-          <Link href="/dashboard" className="font-bold tracking-tight text-brand">
-            tymai
+      <header className="sticky top-0 z-20 border-b border-line/80 bg-surface/85 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-3 px-3 py-2 md:gap-5 md:px-6">
+          <Link href="/dashboard" className="shrink-0 rounded-lg font-bold tracking-tight text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+            <span className="text-lg">tymai</span>
           </Link>
 
-          <nav className="flex items-center gap-1 text-sm">
-            <NavLink href="/dashboard">หน้าหลัก</NavLink>
-            <NavLink href="/bills/new">สร้างบิล</NavLink>
-            <NavLink href="/friends">เพื่อน</NavLink>
-            <NavLink href="/history">ประวัติ</NavLink>
-            <NavLink href="/settings">ตั้งค่า</NavLink>
-            {user.role === 'ADMIN' && <NavLink href="/admin">แอดมิน</NavLink>}
-          </nav>
+          <ShellNav
+            items={[
+              { href: '/dashboard', label: 'หน้าหลัก', icon: 'chart' },
+              { href: '/bills/new', label: 'สร้างบิล', icon: 'filePlus' },
+              { href: '/friends', label: 'เพื่อน', icon: 'contacts' },
+              { href: '/history', label: 'ประวัติ', icon: 'history' },
+              { href: '/settings', label: 'ตั้งค่า', icon: 'settings' },
+              ...(user.role === 'ADMIN' ? [{ href: '/admin', label: 'แอดมิน', icon: 'shield' as const }] : []),
+            ]}
+          />
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             {user.role === 'ADMIN' && <Badge tone="brand">ADMIN</Badge>}
-            <span className="hidden text-sm text-ink-muted sm:inline">{user.name ?? user.email}</span>
+            <span className="hidden max-w-36 truncate text-sm text-ink-muted lg:inline">{user.name ?? user.email}</span>
             <SignOutButton />
           </div>
         </div>
@@ -40,16 +43,5 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
       {children}
     </div>
-  );
-}
-
-function NavLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-lg px-2.5 py-1.5 text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink"
-    >
-      {children}
-    </Link>
   );
 }

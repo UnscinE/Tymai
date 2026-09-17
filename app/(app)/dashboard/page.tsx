@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ArrowUpRight, CircleCheck, CreditCard, FileText, Plus } from 'lucide-react';
 import { requireUser } from '@/server/guards';
 import { db } from '@/server/db';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -51,10 +52,11 @@ export default async function DashboardPage() {
   const outstanding = pendingParticipations.reduce((sum, p) => sum + p.amountDueSatang, 0);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 md:px-6">
+    <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-10">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-brand">ภาพรวมของคุณ</p>
+          <h1 className="text-2xl font-bold tracking-tight text-ink md:text-3xl">
             สวัสดี {user.name ?? 'ครับ'}
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
@@ -64,9 +66,15 @@ export default async function DashboardPage() {
           </p>
         </div>
         <Link href="/bills/new">
-          <Button>+ สร้างบิลใหม่</Button>
+          <Button><Plus size={17} aria-hidden={true} /> สร้างบิลใหม่</Button>
         </Link>
       </header>
+
+      <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3">
+        <SummaryTile icon={CreditCard} label="รอชำระ" value={`${pendingParticipations.length} บิล`} tone="warning" />
+        <SummaryTile icon={FileText} label="บิลที่สร้าง" value={`${createdBills.length} บิล`} />
+        <SummaryTile icon={CircleCheck} label="ยอดค้างชำระ" value={`${formatAmount(outstanding)} บาท`} tone="success" className="col-span-2 md:col-span-1" />
+      </section>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card>
@@ -88,11 +96,15 @@ export default async function DashboardPage() {
                   <li key={p.id}>
                     <Link
                       href={`/bills/${p.bill.id}/pay`}
-                      className="flex items-center justify-between rounded-xl border border-line bg-white p-3 transition hover:border-brand/40"
+                      className="group flex items-center justify-between rounded-xl border border-line bg-white p-3 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-sm"
                     >
-                      <span className="truncate text-sm font-medium text-ink">{p.bill.title}</span>
-                      <span className="shrink-0 text-sm font-bold tabular-nums text-brand">
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-ink">{p.bill.title}</span>
+                        <span className="text-xs text-ink-faint">แตะเพื่อดู QR และชำระเงิน</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2 text-sm font-bold tabular-nums text-brand">
                         {formatAmount(p.amountDueSatang)}
+                        <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden={true} />
                       </span>
                     </Link>
                   </li>
@@ -120,7 +132,7 @@ export default async function DashboardPage() {
                   <li key={bill.id}>
                     <Link
                       href={`/bills/${bill.id}/manage`}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-line bg-white p-3 transition hover:border-brand/40"
+                      className="group flex items-center justify-between gap-2 rounded-xl border border-line bg-white p-3 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-sm"
                     >
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-ink">
@@ -133,8 +145,9 @@ export default async function DashboardPage() {
                       <Badge tone={bill.status === 'DRAFT' ? 'neutral' : 'brand'}>
                         {bill.status === 'DRAFT' ? 'ฉบับร่าง' : 'กำลังเก็บเงิน'}
                       </Badge>
-                      <span className="shrink-0 text-sm font-bold tabular-nums text-ink">
+                      <span className="flex shrink-0 items-center gap-2 text-sm font-bold tabular-nums text-ink">
                         {formatAmount(bill.totalSatang)}
+                        <ArrowUpRight size={16} className="text-ink-faint transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden={true} />
                       </span>
                     </Link>
                   </li>
@@ -145,5 +158,29 @@ export default async function DashboardPage() {
         </Card>
       </div>
     </main>
+  );
+}
+
+function SummaryTile({
+  icon: Icon,
+  label,
+  value,
+  tone,
+  className,
+}: {
+  icon: typeof CreditCard;
+  label: string;
+  value: string;
+  tone?: 'success' | 'warning';
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-2xl border border-line/80 bg-white/80 p-4 shadow-card ${className ?? ''}`}>
+      <div className={`mb-3 grid h-9 w-9 place-items-center rounded-xl ${tone === 'success' ? 'bg-success-soft text-success-ink' : tone === 'warning' ? 'bg-warning-soft text-warning-ink' : 'bg-brand-soft text-brand-dark'}`}>
+        <Icon size={18} aria-hidden={true} />
+      </div>
+      <p className="text-xs text-ink-faint">{label}</p>
+      <p className="mt-1 text-lg font-bold tabular-nums text-ink">{value}</p>
+    </div>
   );
 }
