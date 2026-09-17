@@ -29,10 +29,21 @@ export function BillSummary({
           const isPaid = paidPersonIds?.has(share.personId) ?? false;
           const isSelected = selectedPersonId === share.personId;
           return (
-            <motion.li key={share.personId} layout variants={fadeUp} exit="exit">
-              <button
+            <motion.li
+              key={share.personId}
+              layout
+              initial={{ opacity: 0, scale: 0.9, height: 0 }}
+              animate={{ opacity: 1, scale: 1, height: 'auto' }}
+              exit={{ opacity: 0, scale: 0.9, height: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
+              className="overflow-hidden"
+            >
+              <motion.button
                 type="button"
                 onClick={() => onSelectPerson(share.personId)}
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
                 className={cn(
                   'w-full rounded-xl border p-3 text-left transition',
                   'hover:border-brand/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
@@ -58,7 +69,7 @@ export function BillSummary({
                 ) : (
                   <p className="mt-1 text-xs text-ink-faint">ยังไม่ได้ถูกจับคู่กับเมนูไหน</p>
                 )}
-              </button>
+              </motion.button>
             </motion.li>
           );
         })}

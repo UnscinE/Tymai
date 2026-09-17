@@ -37,7 +37,7 @@ export function VerificationStatus({
           transition={{ type: 'spring', stiffness: 400, damping: 34 }}
           className="overflow-hidden"
         >
-          <div
+          <motion.div
             role="status"
             aria-live="polite"
             className={cn(
@@ -46,6 +46,8 @@ export function VerificationStatus({
               stage === 'success' && 'border-success/25 bg-success-soft text-success-ink',
               stage === 'failed' && 'border-danger/25 bg-danger-soft text-danger-ink',
             )}
+            animate={stage === 'failed' ? { x: [0, -6, 6, -4, 4, 0] } : { x: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
           >
             <span className="mt-px w-3 shrink-0 text-center">
               {busy ? (
@@ -66,7 +68,7 @@ export function VerificationStatus({
                 ลองใหม่
               </button>
             )}
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

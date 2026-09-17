@@ -21,7 +21,7 @@ export function ItemRow({
   onRemove: (itemId: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   const eaterCount = item.sharedBy.length;
   const perHead = eaterCount > 0 ? splitEvenly(item.price, eaterCount)[0] : 0;
   const allSelected = eaterCount === people.length && people.length > 0;
@@ -29,11 +29,14 @@ export function ItemRow({
   return (
     <motion.li
       layout
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.9, height: 0 }}
+      animate={{ opacity: 1, scale: 1, height: 'auto' }}
+      exit={{ opacity: 0, scale: 0.9, height: 0 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
+      whileHover={{ scale: 1.01, y: -2 }}
+      whileTap={{ scale: 0.97 }}
       className={cn(
-        'group relative flex flex-col rounded-xl border p-4 transition-all duration-200 hover:shadow-sm',
+        'group relative flex flex-col overflow-hidden rounded-xl border p-4 transition-all duration-200 hover:shadow-sm',
         eaterCount === 0 ? 'border-warning/40 bg-warning-soft' : 'border-line bg-white hover:border-brand/40',
       )}
     >
@@ -57,7 +60,7 @@ export function ItemRow({
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <p className="text-lg font-bold tabular-nums text-ink">{formatAmount(item.price)}</p>
           <button
@@ -80,25 +83,34 @@ export function ItemRow({
             className="overflow-hidden"
           >
             <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-line pt-3">
-              {people.map((person) => {
-                const active = item.sharedBy.includes(person.id);
-                return (
-                  <button
-                    key={person.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => onToggleEater(item.id, person.id)}
-                    className={cn(
-                      'rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-95',
-                      active
-                        ? 'border-brand/30 bg-brand-soft text-brand-dark'
-                        : 'border-line bg-white text-ink-faint hover:border-ink-faint hover:text-ink-muted',
-                    )}
-                  >
-                    {person.name}
-                  </button>
-                );
-              })}
+              <AnimatePresence mode="popLayout" initial={false}>
+                {people.map((person) => {
+                  const active = item.sharedBy.includes(person.id);
+                  return (
+                    <motion.button
+                      key={person.id}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => onToggleEater(item.id, person.id)}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9, height: 0 }}
+                      animate={{ opacity: 1, scale: 1, height: 'auto' }}
+                      exit={{ opacity: 0, scale: 0.9, height: 0 }}
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-95',
+                        active
+                          ? 'border-brand/30 bg-brand-soft text-brand-dark'
+                          : 'border-line bg-white text-ink-faint hover:border-ink-faint hover:text-ink-muted',
+                      )}
+                    >
+                      {person.name}
+                    </motion.button>
+                  );
+                })}
+              </AnimatePresence>
 
               {people.length > 0 && (
                 <button

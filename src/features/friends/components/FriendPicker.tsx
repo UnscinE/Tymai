@@ -56,9 +56,17 @@ export function FriendPicker({
           onClick={() => onPick(currentUser)}
         />
 
-        <AnimatePresence initial={false}>
+        <AnimatePresence initial={false} mode="popLayout">
           {friends.map((friend) => (
-            <motion.div key={friend.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <motion.div
+              key={friend.id}
+              layout
+              initial={{ opacity: 0, scale: 0.9, height: 0 }}
+              animate={{ opacity: 1, scale: 1, height: 'auto' }}
+              exit={{ opacity: 0, scale: 0.9, height: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
+              className="overflow-hidden"
+            >
               <PickChip
                 label={friend.name ?? friend.username ?? 'เพื่อน'}
                 selected={selected.has(friend.id)}
@@ -95,11 +103,14 @@ function PickChip({
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
       disabled={selected}
       aria-pressed={selected}
+      whileHover={!selected ? { scale: 1.01, y: -2 } : undefined}
+      whileTap={!selected ? { scale: 0.97 } : undefined}
+      transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
       className={cn(
         'flex items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm font-medium transition',
         'active:scale-95 disabled:cursor-default disabled:active:scale-100',
@@ -117,6 +128,6 @@ function PickChip({
       )}
       <span className="max-w-[10rem] truncate">{label}</span>
       {selected && <span aria-hidden="true">✓</span>}
-    </button>
+    </motion.button>
   );
 }

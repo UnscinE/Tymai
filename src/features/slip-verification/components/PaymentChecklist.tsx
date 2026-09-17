@@ -6,7 +6,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Button } from '@/shared/components/ui/Button';
 import { cn } from '@/shared/lib/cn';
 import { formatAmount } from '@/shared/lib/currency';
-import { fadeUp, staggerList } from '@/shared/components/motion/variants';
+import { staggerList } from '@/shared/components/motion/variants';
 import type { Bill, SplitResult } from '@/features/bill-split/types';
 import { useSlipVerification } from '../hooks/use-slip-verification';
 import { SlipDropzone } from './SlipDropzone';
@@ -73,19 +73,24 @@ export function PaymentChecklist({
             <motion.li
               key={share.personId}
               layout
-              variants={fadeUp}
-              exit="exit"
+              initial={{ opacity: 0, scale: 0.9, height: 0 }}
+              animate={{ opacity: 1, scale: 1, height: 'auto' }}
+              exit={{ opacity: 0, scale: 0.9, height: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
               className={cn(
-                'rounded-xl border p-3 transition-colors',
+                'overflow-hidden rounded-xl border p-3 transition-colors',
                 isPaid ? 'border-success/30 bg-success-soft/60' : 'border-line bg-white',
                 selectedPersonId === share.personId && !isPaid && 'ring-4 ring-brand/10',
               )}
             >
               <div className="flex items-center justify-between gap-2">
-                <button
+                <motion.button
                   type="button"
                   disabled={!onSelectPerson}
                   onClick={() => onSelectPerson?.(share.personId)}
+                  whileHover={onSelectPerson ? { scale: 1.01, y: -2 } : undefined}
+                  whileTap={onSelectPerson ? { scale: 0.97 } : undefined}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
                   className="min-w-0 flex-1 text-left disabled:cursor-default"
                 >
                   <p className="truncate text-sm font-semibold text-ink">{share.name}</p>
@@ -94,7 +99,7 @@ export function PaymentChecklist({
                       ? `จ่ายเมื่อ ${formatTime(record.paidAt)}${record.manual ? ' (ยืนยันด้วยมือ)' : ''}`
                       : `ยอด ${formatAmount(share.total)} บาท`}
                   </p>
-                </button>
+                </motion.button>
 
                 <span className="flex shrink-0 items-center gap-2">
                   <motion.span layout>
@@ -115,15 +120,21 @@ export function PaymentChecklist({
                     />
                   )}
                   {isOwner && (
-                    <Button
-                      size="sm"
-                      variant={isPaid ? 'ghost' : 'secondary'}
-                      disabled={manualBusyId === share.personId}
-                      onClick={() => handleManualToggle(share.personId, isPaid ? 'unpaid' : 'paid')}
-                      className="shrink-0"
+                    <motion.div
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
                     >
-                      {isPaid ? 'ยกเลิก' : 'ติ๊กเอง'}
-                    </Button>
+                      <Button
+                        size="sm"
+                        variant={isPaid ? 'ghost' : 'secondary'}
+                        disabled={manualBusyId === share.personId}
+                        onClick={() => handleManualToggle(share.personId, isPaid ? 'unpaid' : 'paid')}
+                        className="shrink-0"
+                      >
+                        {isPaid ? 'ยกเลิก' : 'ติ๊กเอง'}
+                      </Button>
+                    </motion.div>
                   )}
                 </div>
               )}

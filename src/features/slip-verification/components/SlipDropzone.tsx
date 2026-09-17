@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 
@@ -21,7 +22,8 @@ export function SlipDropzone({
   };
 
   return (
-    <div
+    <motion.div
+      layout
       onDragOver={(e) => {
         e.preventDefault();
         if (!disabled) setDragging(true);
@@ -34,10 +36,13 @@ export function SlipDropzone({
       }}
       className="w-full"
     >
-      <button
+      <motion.button
         type="button"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
+        whileHover={!disabled ? { scale: 1.01, y: -2 } : undefined}
+        whileTap={!disabled ? { scale: 0.97 } : undefined}
+        transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
         className={cn(
           'w-full rounded-xl border border-dashed px-3 py-2.5 text-sm font-medium transition',
           'active:scale-[0.99] disabled:pointer-events-none disabled:opacity-45',
@@ -47,7 +52,7 @@ export function SlipDropzone({
         )}
       >
         {dragging ? 'วางไฟล์ตรงนี้ได้เลย' : label}
-      </button>
+      </motion.button>
       <input
         ref={inputRef}
         type="file"
@@ -58,6 +63,6 @@ export function SlipDropzone({
           e.target.value = '';
         }}
       />
-    </div>
+    </motion.div>
   );
 }

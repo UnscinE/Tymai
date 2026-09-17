@@ -10,7 +10,7 @@ import {
   PeopleManager, useBillSplit, usePublishBill, useQrLogo,
 } from '@/features';
 import {
-  Button, Card, CardBody, CardHeader, fadeUp, formatAmount, Input, staggerList,
+  Button, Card, CardBody, CardHeader, fadeUp, formatAmount, staggerList,
 } from '@/shared';
 
 /**
@@ -64,7 +64,12 @@ export function BillBuilder({
   if (!hydrated) return <BuilderSkeleton />;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 pb-32 md:px-6 md:pb-12">
+    <motion.main
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="mx-auto max-w-6xl px-4 py-8 pb-32 md:px-6 md:pb-12"
+    >
       <motion.header variants={fadeUp} initial="hidden" animate="show" className="mb-6 hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight text-ink">สร้างบิลใหม่</h1>
         <p className="mt-1 text-sm text-ink-muted">
@@ -86,7 +91,7 @@ export function BillBuilder({
 
       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8 lg:items-start">
         {/* คอลัมน์ 1: The Receipt (Left Side - 60% width = 7 columns) */}
-        <div className="lg:col-span-7 space-y-6">
+        <motion.div layout className="lg:col-span-7 space-y-6">
           {/* Header: Party Name */}
           <div className="flex flex-col gap-2">
             <label className="sr-only">ชื่อบิล (Party Name)</label>
@@ -118,50 +123,52 @@ export function BillBuilder({
             </div>
           </div>
 
-          <Card>
-            <CardHeader
-              title="รายการอาหาร"
-              description="เพิ่มเมนูที่กิน แล้วกดขยายเพื่อเลือกคนแชร์"
-              action={
-                draft.items.length > 0 ? (
-                  <span className="text-xs whitespace-nowrap text-ink-faint">
-                    {draft.items.length} รายการ
-                  </span>
-                ) : undefined
-              }
-            />
-            <CardBody className="space-y-5">
-              <ItemForm
-                disabled={draft.people.length === 0}
-                onAdd={(name, price) =>
-                  actions.addItem(name, price, draft.people.map((p) => p.id))
+          <motion.div layout whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}>
+            <Card>
+              <CardHeader
+                title="รายการอาหาร"
+                description="เพิ่มเมนูที่กิน แล้วกดขยายเพื่อเลือกคนแชร์"
+                action={
+                  draft.items.length > 0 ? (
+                    <span className="text-xs whitespace-nowrap text-ink-faint">
+                      {draft.items.length} รายการ
+                    </span>
+                  ) : undefined
                 }
               />
-              {draft.people.length === 0 && (
-                <p className="text-xs text-ink-faint">เพิ่มสมาชิกก่อนจึงจะเพิ่มเมนูได้</p>
-              )}
+              <CardBody className="space-y-5">
+                <ItemForm
+                  disabled={draft.people.length === 0}
+                  onAdd={(name, price) =>
+                    actions.addItem(name, price, draft.people.map((p) => p.id))
+                  }
+                />
+                {draft.people.length === 0 && (
+                  <p className="text-xs text-ink-faint">เพิ่มสมาชิกก่อนจึงจะเพิ่มเมนูได้</p>
+                )}
 
-              <motion.ul variants={staggerList} initial="hidden" animate="show" className="space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {draft.items.map((item) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      people={draft.people}
-                      onToggleEater={actions.toggleEater}
-                      onSelectAll={actions.setItemEaters}
-                      onRemove={actions.removeItem}
-                    />
-                  ))}
-                </AnimatePresence>
-              </motion.ul>
-            </CardBody>
-          </Card>
-        </div>
+                <motion.ul variants={staggerList} initial="hidden" animate="show" className="space-y-3">
+                  <AnimatePresence mode="popLayout">
+                    {draft.items.map((item) => (
+                      <ItemRow
+                        key={item.id}
+                        item={item}
+                        people={draft.people}
+                        onToggleEater={actions.toggleEater}
+                        onSelectAll={actions.setItemEaters}
+                        onRemove={actions.removeItem}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </motion.ul>
+              </CardBody>
+            </Card>
+          </motion.div>
+        </motion.div>
 
         {/* คอลัมน์ 2: Participants & Summary (Right Side - 40% width = 5 columns, Sticky) */}
-        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-6 lg:self-start z-10 pb-20 lg:pb-0">
-          
+        <motion.div layout className="lg:col-span-5 space-y-6 lg:sticky lg:top-6 lg:self-start z-10 pb-20 lg:pb-0">
+
           {/* Desktop Only: Participants */}
           <div className="hidden lg:block space-y-4">
             <Card>
@@ -220,7 +227,7 @@ export function BillBuilder({
               </div>
             </CardBody>
           </Card>
-          
+
           <Card>
             <CardHeader title="สรุปยอดแต่ละคน" />
             <CardBody>
@@ -231,11 +238,11 @@ export function BillBuilder({
               />
             </CardBody>
           </Card>
-        </div>
+        </motion.div>
       </div>
 
       {/* Sticky Bottom Bar (Mobile & Desktop) for Call to Action */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-surface/80 p-4 backdrop-blur-md lg:static lg:mt-6 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+      <motion.div layout className="fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-surface/80 p-4 backdrop-blur-md lg:static lg:mt-6 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 lg:justify-end lg:flex-row-reverse">
           <div className="flex flex-col lg:hidden">
             <span className="text-xs text-ink-muted">ยอดรวมทั้งบิล</span>
@@ -245,15 +252,15 @@ export function BillBuilder({
           </div>
 
           <div className="hidden lg:flex items-center gap-4 bg-surface-alt px-4 py-2 rounded-xl">
-             <span className="text-sm text-ink-muted">ยอดรวมทั้งบิล</span>
-             <span className="text-2xl font-extrabold tabular-nums text-brand">
-               {formatAmount(split.grandTotal)}
-             </span>
+            <span className="text-sm text-ink-muted">ยอดรวมทั้งบิล</span>
+            <span className="text-2xl font-extrabold tabular-nums text-brand">
+              {formatAmount(split.grandTotal)}
+            </span>
           </div>
 
-          <Button 
-            className="flex-1 lg:flex-none lg:w-64 lg:text-lg lg:h-14" 
-            onClick={handlePublish} 
+          <Button
+            className="flex-1 lg:flex-none lg:w-64 lg:text-lg lg:h-14"
+            onClick={handlePublish}
             disabled={publishing || !canPublish}
           >
             {publishing ? 'กำลังสร้างบิล...' : 'ยืนยันบิล & เก็บเงิน'}
@@ -272,8 +279,8 @@ export function BillBuilder({
             มี {split.unassignedItems.length} รายการที่ไม่มีคนจ่าย
           </p>
         )}
-      </div>
-    </main>
+      </motion.div>
+    </motion.main>
   );
 }
 
@@ -283,11 +290,11 @@ function BuilderSkeleton() {
       <div className="h-8 w-48 animate-pulse rounded-lg bg-surface-alt" />
       <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-12">
         <div className="lg:col-span-7 space-y-5">
-           <div className="h-72 animate-pulse rounded-2xl bg-surface-alt" />
+          <div className="h-72 animate-pulse rounded-2xl bg-surface-alt" />
         </div>
         <div className="lg:col-span-5 space-y-5">
-           <div className="h-48 animate-pulse rounded-2xl bg-surface-alt" />
-           <div className="h-72 animate-pulse rounded-2xl bg-surface-alt" />
+          <div className="h-48 animate-pulse rounded-2xl bg-surface-alt" />
+          <div className="h-72 animate-pulse rounded-2xl bg-surface-alt" />
         </div>
       </div>
     </main>

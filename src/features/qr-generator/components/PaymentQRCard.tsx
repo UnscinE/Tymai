@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { Button } from '@/shared/components/ui/Button';
-import { scaleIn } from '@/shared/components/motion/variants';
 import { formatTHB } from '@/shared/lib/currency';
 import { usePromptPayPayload, type QRSource } from '../hooks/use-promptpay-payload';
 import { composePaymentCard } from '../lib/compose-card';
@@ -59,9 +58,11 @@ export function PaymentQRCard({
 
   return (
     <motion.div
-      variants={scaleIn}
-      initial="hidden"
-      animate="show"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.01, y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
       className="w-full max-w-[336px] overflow-hidden rounded-3xl border border-line bg-white shadow-lifted"
     >
       <div className="bg-brand px-5 py-4 text-center">
